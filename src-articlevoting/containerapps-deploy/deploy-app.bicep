@@ -52,7 +52,7 @@ resource stAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
 }
 
 // Create Container App Environment
-resource env 'Microsoft.Web/kubeEnvironments@2021-02-01' = {
+resource env 'Microsoft.Web/kubeEnvironments@2021-03-01' = {
   name: envName
   location: location
   properties: {

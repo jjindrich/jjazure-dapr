@@ -29,6 +29,5 @@ module app 'deploy-app.bicep' = {
     cosmosAccountName: cosmos.outputs.cosmosAccountName
     sbNamespaceName: sb.outputs.sbNamespaceName
     stAccountName: st.outputs.stAccountName
-    location: 'northeurope' // location must be harcoded for now because of preview
   }
 }
