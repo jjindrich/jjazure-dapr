@@ -6,7 +6,7 @@ param imageVotes string
 
 param cosmosAccountName string
 param sbNamespaceName string
-param stAccountName string
+//param stAccountName string
 
 param logName string = 'jjdev-analytics'
 param logResourceGroupName string = 'jjdevmanagement'
@@ -47,9 +47,9 @@ resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@202
   }
 }
 
-resource stAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
-  name: stAccountName
-}
+// resource stAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
+//   name: stAccountName
+// }
 
 // Create Container App Environment
 resource env 'Microsoft.Web/kubeEnvironments@2021-03-01' = {
@@ -81,14 +81,14 @@ resource appArticles 'Microsoft.Web/containerApps@2021-03-01' = {
           name: 'registry-pwd'          
           value: acr.listCredentials().passwords[0].value
         }
-        // {
-        //   name: 'cosmos-key'
-        //   value: cosmosAccount.listKeys().primaryMasterKey
-        // }
         {
-          name: 'storage-key'
-          value: stAccount.listKeys().keys[0].value
+          name: 'cosmos-key'
+          value: cosmosAccount.listKeys().primaryMasterKey
         }
+        // {
+        //   name: 'storage-key'
+        //   value: stAccount.listKeys().keys[0].value
+        // }
         {
           name: 'sb-conn'
           value: sbAuthorization.listKeys().primaryConnectionString          
@@ -122,48 +122,48 @@ resource appArticles 'Microsoft.Web/containerApps@2021-03-01' = {
         appPort: 5005  
         appId: 'app-articles'
         components: [
-          // {
-          //   name: 'jjstate-articles'
-          //   type: 'state.azure.cosmosdb'
-          //   version: 'v1'
-          //   metadata: [
-          //     {
-          //       name: 'url'
-          //       value: cosmosAccount.properties.documentEndpoint
-          //     }
-          //     {
-          //       name: 'masterKey '
-          //       secretRef: 'cosmos-key'
-          //     }
-          //     {
-          //       name: 'database'
-          //       value: 'jjdb'
-          //     }
-          //     {
-          //       name: 'collection'
-          //       value: 'articles'
-          //     }
-          //   ]
-          // }
           {
             name: 'jjstate-articles'
-            type: 'state.azure.blobstorage'
+            type: 'state.azure.cosmosdb'
             version: 'v1'
             metadata: [
               {
-                name: 'accountName'
-                value: stAccount.name
+                name: 'url'
+                value: cosmosAccount.properties.documentEndpoint
               }
               {
-                name: 'accountKey'
-                secretRef: 'storage-key'
+                name: 'masterKey'
+                secretRef: 'cosmos-key'
               }
               {
-                name: 'containerName'
+                name: 'database'
+                value: 'jjdb'
+              }
+              {
+                name: 'collection'
                 value: 'articles'
               }
             ]
           }
+          // {
+          //   name: 'jjstate-articles'
+          //   type: 'state.azure.blobstorage'
+          //   version: 'v1'
+          //   metadata: [
+          //     {
+          //       name: 'accountName'
+          //       value: stAccount.name
+          //     }
+          //     {
+          //       name: 'accountKey'
+          //       secretRef: 'storage-key'
+          //     }
+          //     {
+          //       name: 'containerName'
+          //       value: 'articles'
+          //     }
+          //   ]
+          // }
           {
             name: 'pubsub'
             type: 'pubsub.azure.servicebus'
@@ -198,14 +198,14 @@ resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
           name: 'registry-pwd'          
           value: acr.listCredentials().passwords[0].value
         }
-        // {
-        //   name: 'cosmos-key'
-        //   value: cosmosAccount.listKeys().primaryMasterKey
-        // }
         {
-          name: 'storage-key'
-          value: stAccount.listKeys().keys[0].value
+          name: 'cosmos-key'
+          value: cosmosAccount.listKeys().primaryMasterKey
         }
+        // {
+        //   name: 'storage-key'
+        //   value: stAccount.listKeys().keys[0].value
+        // }
         {
           name: 'sb-conn'
           value: sbAuthorization.listKeys().primaryConnectionString          
@@ -239,48 +239,48 @@ resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
         appPort: 80
         appId: 'app-votes'
         components: [
-          // {
-          //   name: 'jjstate-votes'
-          //   type: 'state.azure.cosmosdb'
-          //   version: 'v1'
-          //   metadata: [
-          //     {
-          //       name: 'url'
-          //       value: cosmosAccount.properties.documentEndpoint
-          //     }
-          //     {
-          //       name: 'masterKey '
-          //       secretRef: 'cosmos-key'
-          //     }
-          //     {
-          //       name: 'database'
-          //       value: 'jjdb'
-          //     }
-          //     {
-          //       name: 'collection'
-          //       value: 'votes'
-          //     }
-          //   ]
-          // }
           {
             name: 'jjstate-votes'
-            type: 'state.azure.blobstorage'
+            type: 'state.azure.cosmosdb'
             version: 'v1'
             metadata: [
               {
-                name: 'accountName'
-                value: stAccount.name
+                name: 'url'
+                value: cosmosAccount.properties.documentEndpoint
               }
               {
-                name: 'accountKey'
-                secretRef: 'storage-key'
+                name: 'masterKey'
+                secretRef: 'cosmos-key'
               }
               {
-                name: 'containerName'
+                name: 'database'
+                value: 'jjdb'
+              }
+              {
+                name: 'collection'
                 value: 'votes'
               }
             ]
           }
+          // {
+          //   name: 'jjstate-votes'
+          //   type: 'state.azure.blobstorage'
+          //   version: 'v1'
+          //   metadata: [
+          //     {
+          //       name: 'accountName'
+          //       value: stAccount.name
+          //     }
+          //     {
+          //       name: 'accountKey'
+          //       secretRef: 'storage-key'
+          //     }
+          //     {
+          //       name: 'containerName'
+          //       value: 'votes'
+          //     }
+          //   ]
+          // }
           {
             name: 'pubsub'
             type: 'pubsub.azure.servicebus'

@@ -5,12 +5,12 @@ module cosmos 'deploy-cosmos.bicep' = {
   }
 }
 
-module st 'deploy-storage.bicep' = {
-  name: 'jjstoragedapr'
-  params:{
-    stName: 'jjstoragedapr'
-  }
-}
+// module st 'deploy-storage.bicep' = {
+//   name: 'jjstoragedapr'
+//   params:{
+//     stName: 'jjstoragedapr'
+//   }
+// }
 
 module sb 'deploy-sb.bicep' = {
   name: 'jjsbus'
@@ -28,6 +28,6 @@ module app 'deploy-app.bicep' = {
     imageVotes: 'api-votes:v1'
     cosmosAccountName: cosmos.outputs.cosmosAccountName
     sbNamespaceName: sb.outputs.sbNamespaceName
-    stAccountName: st.outputs.stAccountName
+    //stAccountName: st.outputs.stAccountName   // use is for storage account state store
   }
 }
