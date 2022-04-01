@@ -24,7 +24,7 @@ resource log 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = {
   scope: resourceGroup(logResourceGroupName)
 }
 
-resource acr 'Microsoft.ContainerRegistry/registries@2021-06-01-preview' existing = {
+resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existing = {
   name: imageRegistryName
 }
 
@@ -52,12 +52,10 @@ resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@202
 // }
 
 // Create Container App Environment
-resource env 'Microsoft.Web/kubeEnvironments@2021-03-01' = {
+resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
   name: envName
   location: location
   properties: {
-    type: 'Managed'
-    internalLoadBalancerEnabled: false
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
@@ -66,104 +64,149 @@ resource env 'Microsoft.Web/kubeEnvironments@2021-03-01' = {
       }
     }
   }
-}
-
-// Create Container App: Articles
-resource appArticles 'Microsoft.Web/containerApps@2021-03-01' = {
-  name: '${appName}-articles'
-  kind: 'containerapp'
-  location: location
-  properties: {
-    kubeEnvironmentId: env.id
-    configuration: {
+  resource daprStateArticles 'daprComponents@2022-01-01-preview' = {
+    name: 'jjstate-articles'
+    properties: {
+      componentType: 'state.azure.cosmosdb'
+      version: 'v1'
+      ignoreErrors: false
+      initTimeout: '5s'
       secrets: [
-        {
-          name: 'registry-pwd'          
-          value: acr.listCredentials().passwords[0].value
-        }
         {
           name: 'cosmos-key'
           value: cosmosAccount.listKeys().primaryMasterKey
-        }
-        // {
-        //   name: 'storage-key'
-        //   value: stAccount.listKeys().keys[0].value
-        // }
-        {
-          name: 'sb-conn'
-          value: sbAuthorization.listKeys().primaryConnectionString          
-        }       
+        }        
       ]
-      registries: [
+      metadata: [
         {
-          server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'registry-pwd'
+          name: 'url'
+          value: cosmosAccount.properties.documentEndpoint
         }
+        {
+          name: 'masterKey'
+          secretRef: 'cosmos-key'
+        }
+        {
+          name: 'database'
+          value: 'jjdb'
+        }
+        {
+          name: 'collection'
+          value: 'articles'
+        }
+      ]
+      scopes: [
+        'app-articles'
       ]
     }
-    template: {
-      containers: [
+  }
+  resource daprStateVotes 'daprComponents@2022-01-01-preview' = {
+    name: 'jjstate-votes'
+    properties: {
+      componentType: 'state.azure.cosmosdb'
+      version: 'v1'
+      ignoreErrors: false
+      initTimeout: '5s'
+      secrets: [
         {
-          image: '${acr.properties.loginServer}/${imageArticles}'
-          name: 'app-articles'
-          resources: {
-            cpu: '.25'
-            memory: '.5Gi'
-          }
+          name: 'cosmos-key'
+          value: cosmosAccount.listKeys().primaryMasterKey
+        }        
+      ]
+      metadata: [
+        {
+          name: 'url'
+          value: cosmosAccount.properties.documentEndpoint
+        }
+        {
+          name: 'masterKey'
+          secretRef: 'cosmos-key'
+        }
+        {
+          name: 'database'
+          value: 'jjdb'
+        }
+        {
+          name: 'collection'
+          value: 'votes'
         }
       ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-      }
-      dapr: {
-        enabled: true
-        appPort: 5005  
-        appId: 'app-articles'
-        components: [
-          {
+      scopes: [
+        'app-votes'
+      ]
+    }
+  }
+  resource daprPubSub 'daprComponents@2022-01-01-preview' = {
+    name: 'pubsub'
+    properties: {
+      componentType: 'pubsub.azure.servicebus'
+      version: 'v1'
+      ignoreErrors: false
+      initTimeout: '5s'
+      secrets: [
+        {
+          name: 'sb-conn'
+          value: sbAuthorization.listKeys().primaryConnectionString 
+        }        
+      ]
+      metadata: [
+        {
+          name: 'connectionString'
+          secretRef: 'sb-conn'
+        }
+      ]
+      scopes: [
+        'app-articles'
+        'app-votes'
+      ]
+    }
+  }
+  // TODO: refactor to use Storage account as daprComponents
+/*
+        {
+          name: 'storage-key'
+          value: stAccount.listKeys().keys[0].value
+        }
+
+        {
             name: 'jjstate-articles'
-            type: 'state.azure.cosmosdb'
+            type: 'state.azure.blobstorage'
             version: 'v1'
             metadata: [
               {
-                name: 'url'
-                value: cosmosAccount.properties.documentEndpoint
+                name: 'accountName'
+                value: stAccount.name
               }
               {
-                name: 'masterKey'
-                secretRef: 'cosmos-key'
+                name: 'accountKey'
+                secretRef: 'storage-key'
               }
               {
-                name: 'database'
-                value: 'jjdb'
-              }
-              {
-                name: 'collection'
+                name: 'containerName'
                 value: 'articles'
               }
             ]
           }
-          // {
-          //   name: 'jjstate-articles'
-          //   type: 'state.azure.blobstorage'
-          //   version: 'v1'
-          //   metadata: [
-          //     {
-          //       name: 'accountName'
-          //       value: stAccount.name
-          //     }
-          //     {
-          //       name: 'accountKey'
-          //       secretRef: 'storage-key'
-          //     }
-          //     {
-          //       name: 'containerName'
-          //       value: 'articles'
-          //     }
-          //   ]
-          // }
+
+          {
+            name: 'jjstate-votes'
+            type: 'state.azure.blobstorage'
+            version: 'v1'
+            metadata: [
+              {
+                name: 'accountName'
+                value: stAccount.name
+              }
+              {
+                name: 'accountKey'
+                secretRef: 'storage-key'
+              }
+              {
+                name: 'containerName'
+                value: 'votes'
+              }
+            ]
+          }
           {
             name: 'pubsub'
             type: 'pubsub.azure.servicebus'
@@ -175,19 +218,61 @@ resource appArticles 'Microsoft.Web/containerApps@2021-03-01' = {
               }
             ]
           }
-        ]
+*/
+}
+
+// Create Container App: Articles
+resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
+  name: '${appName}-articles'
+  location: location
+  properties: {
+    managedEnvironmentId: env.id
+    configuration: {
+      secrets: [
+        {
+          name: 'registry-pwd'          
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+      registries: [
+        { 
+          // stopped working: acr.properties.loginServer
+          server: '${imageRegistryName}.azurecr.io'
+          username: acr.listCredentials().username
+          passwordSecretRef: 'registry-pwd'
+        }
+      ]      
+      dapr: {
+        enabled: true
+        appPort: 5005  
+        appId: 'app-articles'        
+      }
+    }
+    template: {
+      containers: [
+        {
+          image: '${acr.properties.loginServer}/${imageArticles}'
+          name: 'app-articles'
+          resources: {
+            cpu: '0.25'
+            memory: '0.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
       }
     }
   }
 }
 
 // Create Container App: Votes
-resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
+resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
   name: '${appName}-votes'
-  kind: 'containerapp'
   location: location
   properties: {
-    kubeEnvironmentId: env.id
+    managedEnvironmentId: env.id
     configuration: {
       ingress: {
         external: true
@@ -198,26 +283,20 @@ resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
           name: 'registry-pwd'          
           value: acr.listCredentials().passwords[0].value
         }
-        {
-          name: 'cosmos-key'
-          value: cosmosAccount.listKeys().primaryMasterKey
-        }
-        // {
-        //   name: 'storage-key'
-        //   value: stAccount.listKeys().keys[0].value
-        // }
-        {
-          name: 'sb-conn'
-          value: sbAuthorization.listKeys().primaryConnectionString          
-        }       
       ]
       registries: [
         {
-          server: acr.properties.loginServer
+          // stopped working: acr.properties.loginServer
+          server: '${imageRegistryName}.azurecr.io'
           username: acr.listCredentials().username
           passwordSecretRef: 'registry-pwd'
         }
       ]
+      dapr: {
+        enabled: true
+        appPort: 80
+        appId: 'app-votes'
+      }
     }
     template: {
       containers: [
@@ -225,8 +304,8 @@ resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
           image: '${acr.properties.loginServer}/${imageVotes}'
           name: 'app-votes'
           resources: {
-            cpu: '.25'
-            memory: '.5Gi'
+            cpu: '0.25'
+            memory: '0.5Gi'
           }
         }
       ]
@@ -234,67 +313,6 @@ resource appVotes 'Microsoft.Web/containerApps@2021-03-01' = {
         minReplicas: 1
         maxReplicas: 1
       }
-      dapr: {
-        enabled: true
-        appPort: 80
-        appId: 'app-votes'
-        components: [
-          {
-            name: 'jjstate-votes'
-            type: 'state.azure.cosmosdb'
-            version: 'v1'
-            metadata: [
-              {
-                name: 'url'
-                value: cosmosAccount.properties.documentEndpoint
-              }
-              {
-                name: 'masterKey'
-                secretRef: 'cosmos-key'
-              }
-              {
-                name: 'database'
-                value: 'jjdb'
-              }
-              {
-                name: 'collection'
-                value: 'votes'
-              }
-            ]
-          }
-          // {
-          //   name: 'jjstate-votes'
-          //   type: 'state.azure.blobstorage'
-          //   version: 'v1'
-          //   metadata: [
-          //     {
-          //       name: 'accountName'
-          //       value: stAccount.name
-          //     }
-          //     {
-          //       name: 'accountKey'
-          //       secretRef: 'storage-key'
-          //     }
-          //     {
-          //       name: 'containerName'
-          //       value: 'votes'
-          //     }
-          //   ]
-          // }
-          {
-            name: 'pubsub'
-            type: 'pubsub.azure.servicebus'
-            version: 'v1'
-            metadata: [
-              {
-                name: 'connectionString'
-                secretRef: 'sb-conn'
-              }
-            ]
-          }
-        ]
-      }
     }
   }
 }
-

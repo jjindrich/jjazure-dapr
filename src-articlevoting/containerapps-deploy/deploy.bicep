@@ -1,6 +1,9 @@
+param location string = resourceGroup().location
+
 module cosmos 'deploy-cosmos.bicep' = {
   name: 'jjcosmos'
   params:{
+    location: location
     cosmosName: 'jjcosmos'
   }
 }
@@ -15,6 +18,7 @@ module cosmos 'deploy-cosmos.bicep' = {
 module sb 'deploy-sb.bicep' = {
   name: 'jjsbus'
   params:{
+    location: location
     sbName: 'jjsbus'
   }
 }
@@ -22,6 +26,7 @@ module sb 'deploy-sb.bicep' = {
 module app 'deploy-app.bicep' = {
   name: 'jjapp'
   params: {
+    location: location
     appName: 'jjarticlevoting'
     imageRegistryName: 'jjakscontainers'
     imageArticles: 'api-articles:v1'

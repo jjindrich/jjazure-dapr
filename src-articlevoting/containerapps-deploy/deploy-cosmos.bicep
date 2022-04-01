@@ -1,8 +1,10 @@
 param cosmosName string = 'jjcosmos'
 
+param location string = resourceGroup().location
+
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2021-10-15' = {
   name: cosmosName
-  location: resourceGroup().location
+  location: location
   kind: 'GlobalDocumentDB'
   properties: {
     consistencyPolicy: {
