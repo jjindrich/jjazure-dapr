@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
+    <title>{{title}}</title>
+
+    <script language="JavaScript">
+        function send(form){
+        }
+    </script>
+
+</head>
+<body>
+    <div id="container">
+        <form id="form" name="form" action="/"" method="post"><center>
+        <div id="logo">{{title}}</div>
+        <div id="space"></div>
+        <div id="form">
+        <label>ArticleId:</label>
+        <input type="text" name="articleid" id="articleid" value="1" />
+        <div id="space"></div>
+        <label>UserId:</label>
+        <input type="text" name="userid" id="userid" value="jj" />
+        <div id="space"></div>
+        <button name="vote" value="vote" onclick="send()" class="button button1">Vote</button>
+        <button name="vote" value="likecount" onclick="send()" class="button button2">Like count</button>
+        <div id="space"></div>
+        <div id="space"></div>
+        <div id="results"> {{ value1 }}</div> 
+        </form>        
+        </div>
+    </div>     
+</body>
+</html>

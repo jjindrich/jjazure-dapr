@@ -31,6 +31,7 @@ module app 'deploy-app.bicep' = {
     imageRegistryName: 'jjakscontainers'
     imageArticles: 'api-articles:v1'
     imageVotes: 'api-votes:v1'
+    imageUi: 'ui-votes:v1'
     cosmosAccountName: cosmos.outputs.cosmosAccountName
     sbNamespaceName: sb.outputs.sbNamespaceName
     //stAccountName: st.outputs.stAccountName   // use is for storage account state store

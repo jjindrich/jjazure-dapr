@@ -25,6 +25,7 @@ namespace api_votes.Controllers
                         VoteItem item,
                         [FromServices] DaprClient daprClient)
         {
+            Console.WriteLine("Like called !");
             // unique key for vote like (article and liker)
             string key = item.userid + "|" + item.articleid;
 

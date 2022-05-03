@@ -102,6 +102,34 @@ curl -X POST http://localhost:5030/v1.0/invoke/app-articles/method/create -H "Co
 curl -X POST http://localhost:5030/v1.0/publish/pubsub/likeprocess -H "Content-Type: application/json" -d '{ \"articleid\": \"1\", \"userid\": \"jj\" }'
 dapr publish --topic likeprocess --pubsub pubsub --data '{ \"articleid\": \"1\", \"userid\": \"jj\" }'
 ```
+## Create project for UI in Python
+
+We will use Flask for web development.
+
+Inspiration from samples:
+- https://github.com/Azure-Samples/azure-voting-app-redis/tree/master/azure-vote
+- https://github.com/dapr/samples/blob/master/dapr-distributed-calendar/python/messages.py
+
+Setup local development to use Flask, run under administrator
+
+```
+pip install python-dotenv flask_cors flask dapr
+```
+
+Run in Dapr locally
+
+```powershell
+$env:FLASK_RUN_PORT=8000
+dapr run --app-id ui-python --app-port 8000 --dapr-http-port 5010 flask run
+```
+
+Build and publish UI image
+
+```powershell
+docker build -t ui-votes .
+docker tag ui-votes jjakscontainers.azurecr.io/ui-votes:v1
+docker push jjakscontainers.azurecr.io/ui-votes:v1
+```
 
 ## Deploy into Azure Kubernetes Service (AKS)
 

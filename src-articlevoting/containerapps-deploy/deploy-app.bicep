@@ -3,6 +3,7 @@ param envName string = '${appName}-env'
 param imageRegistryName string
 param imageArticles string
 param imageVotes string
+param imageUi string
 
 param cosmosAccountName string
 param sbNamespaceName string
@@ -63,6 +64,12 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
         sharedKey: log.listKeys().primarySharedKey
       }
     }
+    /*
+    vnetConfiguration: {
+      infrastructureSubnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerAppInfra'      
+      runtimeSubnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerApp'      
+    }
+    */
   }
   resource daprStateArticles 'daprComponents@2022-01-01-preview' = {
     name: 'jjstate-articles'
@@ -303,6 +310,57 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
         {
           image: '${acr.properties.loginServer}/${imageVotes}'
           name: 'app-votes'
+          resources: {
+            cpu: '0.25'
+            memory: '0.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+
+// Create Container App: Ui
+resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
+  name: '${appName}-ui'
+  location: location
+  properties: {
+    managedEnvironmentId: env.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+      }
+      secrets: [
+        {
+          name: 'registry-pwd'          
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+      registries: [
+        {
+          // stopped working: acr.properties.loginServer
+          server: '${imageRegistryName}.azurecr.io'
+          username: acr.listCredentials().username
+          passwordSecretRef: 'registry-pwd'
+        }
+      ]
+      dapr: {
+        enabled: true
+        appPort: 80
+        appId: 'ui-votes'
+      }
+    }
+    template: {
+      containers: [
+        {
+          image: '${acr.properties.loginServer}/${imageUi}'
+          name: 'ui-votes'
           resources: {
             cpu: '0.25'
             memory: '0.5Gi'
