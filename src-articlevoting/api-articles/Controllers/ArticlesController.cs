@@ -71,5 +71,19 @@ namespace api_articles.Controllers
             Console.WriteLine("Finished LikeProcess for article {0}", vote.articleid);
             return Ok() ;
         }
+
+        [HttpGet("Count/{articleid}")]
+        public ActionResult<int> Get(string articleid, [FromServices] DaprClient daprClient)
+        {
+            Console.WriteLine("Enter GetCount for article {0}", articleid);
+
+            var state = daprClient.GetStateAsync<ArticleItem>(StoreName, articleid).Result;
+            if (state == null)
+            {
+                Console.WriteLine("Article {0} not found.", articleid);
+                return NotFound();
+            }
+            return state.voteCount;
+        }
     }
 }
