@@ -31,8 +31,8 @@ def index():
             return render_template("index.html", value1=likecount, title=title)
 
         if request.form['vote'] == 'likecount':            
-            # TODO: read likecount from app-articles
-            return render_template("index.html", value1=likecount, title=title)
+            likecount2 = get_count(request.form['articleid'])
+            return render_template("index.html", value1=likecount2, title=title)
 
 # Call app-votes Hello method
 def hello():
@@ -50,6 +50,13 @@ def vote(articleid: str, userid: str):
         print(req_data, flush=True)        
         resp = d.invoke_method('app-votes', 'like', data=json.dumps(req_data), http_verb='post')
         print(resp, flush=True)
+
+# Call app-articles Get count method
+def get_count(articleid: str):
+    with DaprClient() as d:                    
+        resp = d.invoke_method('app-articles', f"count/{articleid}", data=b'', http_verb="get")        
+        print(resp.text(), flush=True)        
+        return resp.text()
 
 if __name__ == "__main__":
     app.run()
