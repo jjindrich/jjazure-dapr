@@ -273,7 +273,7 @@ resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
           name: 'app-articles'
           resources: {
             cpu: '0.25'
-            memory: '0.15Gi'
+            memory: '0.5Gi'
           }
         }
       ]
@@ -323,7 +323,7 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
           name: 'app-votes'
           resources: {
             cpu: '0.25'
-            memory: '0.15Gi'
+            memory: '0.5Gi'
           }
         }
       ]
