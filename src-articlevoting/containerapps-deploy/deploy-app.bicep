@@ -273,13 +273,13 @@ resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
           name: 'app-articles'
           resources: {
             cpu: '0.25'
-            memory: '0.5Gi'
+            memory: '0.15Gi'
           }
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        minReplicas: 0
+        maxReplicas: 3
       }
     }
   }
@@ -323,13 +323,13 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
           name: 'app-votes'
           resources: {
             cpu: '0.25'
-            memory: '0.5Gi'
+            memory: '0.15Gi'
           }
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        minReplicas: 0
+        maxReplicas: 3
       }
     }
   }
@@ -379,8 +379,8 @@ resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        minReplicas: 0
+        maxReplicas: 3
       }
     }
   }
