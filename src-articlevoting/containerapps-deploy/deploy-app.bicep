@@ -25,6 +25,16 @@ resource log 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = {
   scope: resourceGroup(logResourceGroupName)
 }
 
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${appName}-appinsights'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: log.id
+  }
+}
+
 resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existing = {
   name: imageRegistryName
 }
@@ -62,8 +72,9 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
       logAnalyticsConfiguration: {
         customerId: log.properties.customerId
         sharedKey: log.listKeys().primarySharedKey
-      }
+      }      
     }
+    daprAIInstrumentationKey: reference(appInsights.id, '2020-02-02').InstrumentationKey
     /*
     vnetConfiguration: {
       infrastructureSubnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerAppInfra'      
