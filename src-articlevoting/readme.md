@@ -131,6 +131,14 @@ docker tag ui-votes jjakscontainers.azurecr.io/ui-votes:v1
 docker push jjakscontainers.azurecr.io/ui-votes:v1
 ```
 
+Make some sourcecode changes and publish v2
+
+```powershell
+docker build -t ui-votes .
+docker tag ui-votes jjakscontainers.azurecr.io/ui-votes:v2
+docker push jjakscontainers.azurecr.io/ui-votes:v2
+```
+
 ## Deploy into Azure Kubernetes Service (AKS)
 
 We will use this Azure components
@@ -196,7 +204,7 @@ Bicep deployment using 2 modules
 - ServiceBus module for pubsub functionality
 - App module for Container App
 
-Prerequisite is pushed image into Azure Container Registry
+Prerequisite is pushed image into Azure Container Registry. UI project requires v1 and v2 image tags (make sure some changes in app).
 
 ```powershell
 cd containerapps-deploy
@@ -215,9 +223,23 @@ Test like - change url with jjarticlevoting-votes
 curl -X POST http://<CONTAINERAPP_URL>/like -H "Content-Type: application/json" -d '{ \"articleid\": \"1\", \"userid\": \"jj\" }'
 ```
 
-Monitoring - run following query
+### Monitoring
+
+Run following query
 
 ```kusto
 ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'jjarticlevoting-articles' | project ContainerAppName_s, Log_s, TimeGenerated | order by TimeGenerated
 ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'jjarticlevoting-votes' | project ContainerAppName_s, Log_s, TimeGenerated | order by TimeGenerated
+```
+
+### Project UI uses Container Apps Revisions 
+
+It supports running parallel pods with different version. Traffic is routed based on % allocations.
+Bicep defines latest revision only with revisionSuffix. 
+
+Run deployment with v1 first and than change it to following:
+
+```bicep
+    imageUiTagOld: 'v1'
+    imageUiTagNew: 'v2'
 ```

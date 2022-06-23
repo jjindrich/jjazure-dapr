@@ -3,11 +3,12 @@ param envName string = '${appName}-env'
 param imageRegistryName string
 param imageArticles string
 param imageVotes string
-param imageUi string
+param imageUiBase string
+param imageUiTagNew string
+param imageUiTagOld string
 
 param cosmosAccountName string
 param sbNamespaceName string
-//param stAccountName string
 
 param logName string = 'jjdev-analytics'
 param logResourceGroupName string = 'jjdevmanagement'
@@ -19,7 +20,6 @@ param location string = resourceGroup().location
 //    - Container Registry
 //    - Cosmos DB account
 //    - ServiceBus namespace with topic
-//    - Storage account
 resource log 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = {
   name: logName
   scope: resourceGroup(logResourceGroupName)
@@ -57,10 +57,6 @@ resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@202
     ]
   }
 }
-
-// resource stAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
-//   name: stAccountName
-// }
 
 // Create Container App Environment
 resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
@@ -180,63 +176,6 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
     }
   }
   // TODO: refactor to use Storage account as daprComponents
-/*
-        {
-          name: 'storage-key'
-          value: stAccount.listKeys().keys[0].value
-        }
-
-        {
-            name: 'jjstate-articles'
-            type: 'state.azure.blobstorage'
-            version: 'v1'
-            metadata: [
-              {
-                name: 'accountName'
-                value: stAccount.name
-              }
-              {
-                name: 'accountKey'
-                secretRef: 'storage-key'
-              }
-              {
-                name: 'containerName'
-                value: 'articles'
-              }
-            ]
-          }
-
-          {
-            name: 'jjstate-votes'
-            type: 'state.azure.blobstorage'
-            version: 'v1'
-            metadata: [
-              {
-                name: 'accountName'
-                value: stAccount.name
-              }
-              {
-                name: 'accountKey'
-                secretRef: 'storage-key'
-              }
-              {
-                name: 'containerName'
-                value: 'votes'
-              }
-            ]
-          }
-          {
-            name: 'pubsub'
-            type: 'pubsub.azure.servicebus'
-            version: 'v1'
-            metadata: [
-              {
-                name: 'connectionString'
-                secretRef: 'sb-conn'
-              }
-            ]
-          }
-*/
 }
 
 // Create Container App: Articles
@@ -272,7 +211,7 @@ resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
           image: '${acr.properties.loginServer}/${imageArticles}'
           name: 'app-articles'
           resources: {
-            cpu: '0.25'
+            cpu: json('0.25')
             memory: '0.5Gi'
           }
         }
@@ -281,6 +220,7 @@ resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
         minReplicas: 0
         maxReplicas: 3
       }
+      
     }
   }
 }
@@ -322,7 +262,7 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
           image: '${acr.properties.loginServer}/${imageVotes}'
           name: 'app-votes'
           resources: {
-            cpu: '0.25'
+            cpu: json('0.25')
             memory: '0.5Gi'
           }
         }
@@ -335,7 +275,6 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
   }
 }
 
-
 // Create Container App: Ui
 resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
   name: '${appName}-ui'
@@ -343,9 +282,20 @@ resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
   properties: {
     managedEnvironmentId: env.id
     configuration: {
+      activeRevisionsMode: 'multiple'
       ingress: {
         external: true
         targetPort: 80
+        traffic: [
+          {
+            latestRevision: true            
+            weight: 80         
+          }
+          {
+            revisionName: '${appName}-ui--${imageUiTagOld}'
+            weight: 20
+          }
+        ]
       }
       secrets: [
         {
@@ -368,12 +318,13 @@ resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
       }
     }
     template: {
+      revisionSuffix: imageUiTagNew
       containers: [
         {
-          image: '${acr.properties.loginServer}/${imageUi}'
+          image: '${acr.properties.loginServer}/${imageUiBase}:${imageUiTagNew}'
           name: 'ui-votes'
           resources: {
-            cpu: '0.25'
+            cpu: json('0.25')
             memory: '0.5Gi'
           }
         }

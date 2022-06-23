@@ -8,13 +8,6 @@ module cosmos 'deploy-cosmos.bicep' = {
   }
 }
 
-// module st 'deploy-storage.bicep' = {
-//   name: 'jjstoragedapr'
-//   params:{
-//     stName: 'jjstoragedapr'
-//   }
-// }
-
 module sb 'deploy-sb.bicep' = {
   name: 'jjsbus'
   params:{
@@ -23,17 +16,19 @@ module sb 'deploy-sb.bicep' = {
   }
 }
 
-module app 'deploy-app.bicep' = {
-  name: 'jjapp'
+module appv1 'deploy-app.bicep' = {
+  name: 'jjappv1'
   params: {
     location: location
     appName: 'jjarticlevoting'
     imageRegistryName: 'jjakscontainers'
     imageArticles: 'api-articles:v1'
     imageVotes: 'api-votes:v1'
-    imageUi: 'ui-votes:v1'
+    imageUiBase: 'ui-votes'
+    imageUiTagOld: 'v1'
+    //imageUiTagNew: 'v1'
+    imageUiTagNew: 'v2'
     cosmosAccountName: cosmos.outputs.cosmosAccountName
     sbNamespaceName: sb.outputs.sbNamespaceName
-    //stAccountName: st.outputs.stAccountName   // use is for storage account state store
   }
 }
