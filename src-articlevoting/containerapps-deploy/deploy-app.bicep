@@ -1,5 +1,6 @@
 param appName string = 'jjarticlevoting'
 param envName string = '${appName}-env'
+param vnetId string
 param imageRegistryName string
 param imageArticles string
 param imageVotes string
@@ -71,13 +72,10 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
       }      
     }
     daprAIInstrumentationKey: reference(appInsights.id, '2020-02-02').InstrumentationKey
-    /*
     vnetConfiguration: {
-      infrastructureSubnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerAppInfra'      
-      runtimeSubnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerApp'      
+      infrastructureSubnetId: vnetId
     }
-    */
-  }
+  }  
   resource daprStateArticles 'daprComponents@2022-01-01-preview' = {
     name: 'jjstate-articles'
     properties: {

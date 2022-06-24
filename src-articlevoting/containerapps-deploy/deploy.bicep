@@ -21,6 +21,7 @@ module appv1 'deploy-app.bicep' = {
   params: {
     location: location
     appName: 'jjarticlevoting'
+    vnetId: '/subscriptions/82fb79bf-ee69-4a57-a76c-26153e544afe/resourceGroups/JJDevV2-Infra/providers/Microsoft.Network/virtualNetworks/JJDevV2NetworkApp/subnets/DmzContainerApp'
     imageRegistryName: 'jjakscontainers'
     imageArticles: 'api-articles:v1'
     imageVotes: 'api-votes:v1'
