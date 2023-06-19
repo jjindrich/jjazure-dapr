@@ -127,16 +127,16 @@ Build and publish UI image
 
 ```powershell
 docker build -t ui-votes .
-docker tag ui-votes jjakscontainers.azurecr.io/ui-votes:v1
-docker push jjakscontainers.azurecr.io/ui-votes:v1
+docker tag ui-votes jjazacr.azurecr.io/ui-votes:v1
+docker push jjazacr.azurecr.io/ui-votes:v1
 ```
 
 Make some sourcecode changes and publish v2
 
 ```powershell
 docker build -t ui-votes .
-docker tag ui-votes jjakscontainers.azurecr.io/ui-votes:v2
-docker push jjakscontainers.azurecr.io/ui-votes:v2
+docker tag ui-votes jjazacr.azurecr.io/ui-votes:v2
+docker push jjazacr.azurecr.io/ui-votes:v2
 ```
 
 ## Deploy into Azure Kubernetes Service (AKS)
@@ -173,8 +173,8 @@ Build and deploy API Votes
 
 ```powershell
 docker build -t api-votes ./api-votes
-docker tag api-votes jjakscontainers.azurecr.io/api-votes:v1
-docker push jjakscontainers.azurecr.io/api-votes:v1
+docker tag api-votes jjazacr.azurecr.io/api-votes:v1
+docker push jjazacr.azurecr.io/api-votes:v1
 kubectl apply -f ./aks-deploy/api-votes.yaml
 ```
 
@@ -184,8 +184,8 @@ Build and deploy API Articles
 
 ```powershell
 docker build -t api-articles ./api-articles
-docker tag api-articles jjakscontainers.azurecr.io/api-articles:v1
-docker push jjakscontainers.azurecr.io/api-articles:v1
+docker tag api-articles jjazacr.azurecr.io/api-articles:v1
+docker push jjazacr.azurecr.io/api-articles:v1
 kubectl apply -f ./aks-deploy/api-articles.yaml
 ```
 

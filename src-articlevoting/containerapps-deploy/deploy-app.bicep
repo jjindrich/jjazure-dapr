@@ -1,7 +1,7 @@
 param appName string = 'jjarticlevoting'
 param envName string = '${appName}-env'
-param vnetId string
 param imageRegistryName string
+param imageRegistryResourceGroupName string = 'jjinfra-rg'
 param imageArticles string
 param imageVotes string
 param imageUiBase string
@@ -11,8 +11,8 @@ param imageUiTagOld string
 param cosmosAccountName string
 param sbNamespaceName string
 
-param logName string = 'jjdev-analytics'
-param logResourceGroupName string = 'jjdevmanagement'
+param logName string = 'jjazworkspace'
+param logResourceGroupName string = 'jjinfra-rg'
 
 param location string = resourceGroup().location
 
@@ -36,18 +36,18 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existing = {
+resource acr 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
   name: imageRegistryName
+  scope: resourceGroup(imageRegistryResourceGroupName)
 }
-
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2021-10-15' existing = {
   name: cosmosAccountName
 } 
 
-resource sbNamespace 'Microsoft.ServiceBus/namespaces@2021-06-01-preview' existing = {
+resource sbNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' existing = {
   name: sbNamespaceName
 }
-resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-06-01-preview' = {
+resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11-01' = {
   name: 'RootManageSharedAccessKey'
   parent: sbNamespace
   properties: {
@@ -59,8 +59,24 @@ resource sbAuthorization 'Microsoft.ServiceBus/namespaces/AuthorizationRules@202
   }
 }
 
+// Identity to access ACR
+resource acaIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: '${envName}-acr-identity'
+  location: location
+}
+var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+module acaRole 'deploy-iam.bicep' = {
+  name: 'aca-role'
+  scope: subscription()
+  params: {
+    roleId: acrPullRole
+    identityId: acaIdentity.id
+    identityPrincipalId: acaIdentity.properties.principalId    
+  }
+}
+
 // Create Container App Environment
-resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
+resource env 'Microsoft.App/managedEnvironments@2022-10-01' = {
   name: envName
   location: location
   properties: {
@@ -71,12 +87,9 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
         sharedKey: log.listKeys().primarySharedKey
       }      
     }
-    daprAIInstrumentationKey: reference(appInsights.id, '2020-02-02').InstrumentationKey
-    vnetConfiguration: {
-      infrastructureSubnetId: vnetId
-    }
+    daprAIInstrumentationKey: appInsights.properties.InstrumentationKey
   }  
-  resource daprStateArticles 'daprComponents@2022-01-01-preview' = {
+  resource daprStateArticles 'daprComponents@2022-10-01' = {
     name: 'jjstate-articles'
     properties: {
       componentType: 'state.azure.cosmosdb'
@@ -112,7 +125,7 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
       ]
     }
   }
-  resource daprStateVotes 'daprComponents@2022-01-01-preview' = {
+  resource daprStateVotes 'daprComponents@2022-10-01' = {
     name: 'jjstate-votes'
     properties: {
       componentType: 'state.azure.cosmosdb'
@@ -148,7 +161,7 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
       ]
     }
   }
-  resource daprPubSub 'daprComponents@2022-01-01-preview' = {
+  resource daprPubSub 'daprComponents@2022-10-01' = {
     name: 'pubsub'
     properties: {
       componentType: 'pubsub.azure.servicebus'
@@ -177,24 +190,23 @@ resource env 'Microsoft.App/managedEnvironments@2022-01-01-preview' = {
 }
 
 // Create Container App: Articles
-resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
+resource appArticles 'Microsoft.App/containerApps@2022-10-01' = {
   name: '${appName}-articles'
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${acaIdentity.id}': {}
+    }
+  }  
   properties: {
     managedEnvironmentId: env.id
     configuration: {
-      secrets: [
-        {
-          name: 'registry-pwd'          
-          value: acr.listCredentials().passwords[0].value
-        }
-      ]
+      secrets: []
       registries: [
         { 
-          // stopped working: acr.properties.loginServer
           server: '${imageRegistryName}.azurecr.io'
-          username: acr.listCredentials().username
-          passwordSecretRef: 'registry-pwd'
+          identity: acaIdentity.id
         }
       ]      
       dapr: {
@@ -224,9 +236,15 @@ resource appArticles 'Microsoft.App/containerApps@2022-01-01-preview' = {
 }
 
 // Create Container App: Votes
-resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
+resource appVotes 'Microsoft.App/containerApps@2022-10-01' = {
   name: '${appName}-votes'
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${acaIdentity.id}': {}
+    }
+  }  
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -234,18 +252,11 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
         external: true
         targetPort: 80
       }
-      secrets: [
-        {
-          name: 'registry-pwd'          
-          value: acr.listCredentials().passwords[0].value
-        }
-      ]
+      secrets: []
       registries: [
         {
-          // stopped working: acr.properties.loginServer
           server: '${imageRegistryName}.azurecr.io'
-          username: acr.listCredentials().username
-          passwordSecretRef: 'registry-pwd'
+          identity: acaIdentity.id
         }
       ]
       dapr: {
@@ -274,9 +285,15 @@ resource appVotes 'Microsoft.App/containerApps@2022-01-01-preview' = {
 }
 
 // Create Container App: Ui
-resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
+resource appUi 'Microsoft.App/containerApps@2022-10-01' = {
   name: '${appName}-ui'
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${acaIdentity.id}': {}
+    }
+  }    
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -295,18 +312,11 @@ resource appUi 'Microsoft.App/containerApps@2022-01-01-preview' = {
           }
         ]
       }
-      secrets: [
-        {
-          name: 'registry-pwd'          
-          value: acr.listCredentials().passwords[0].value
-        }
-      ]
+      secrets: []
       registries: [
         {
-          // stopped working: acr.properties.loginServer
           server: '${imageRegistryName}.azurecr.io'
-          username: acr.listCredentials().username
-          passwordSecretRef: 'registry-pwd'
+          identity: acaIdentity.id
         }
       ]
       dapr: {
