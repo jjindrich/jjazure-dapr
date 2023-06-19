@@ -36,10 +36,6 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-resource acr 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
-  name: imageRegistryName
-  scope: resourceGroup(imageRegistryResourceGroupName)
-}
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2021-10-15' existing = {
   name: cosmosAccountName
 } 
@@ -65,10 +61,11 @@ resource acaIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-3
   location: location
 }
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-module acaRole 'deploy-iam.bicep' = {
+module acr 'deploy-acr.bicep' = {
   name: 'aca-role'
-  scope: subscription()
+  scope: resourceGroup(imageRegistryResourceGroupName)
   params: {
+    imageRegistryName: imageRegistryName
     roleId: acrPullRole
     identityId: acaIdentity.id
     identityPrincipalId: acaIdentity.properties.principalId    
@@ -218,7 +215,7 @@ resource appArticles 'Microsoft.App/containerApps@2022-10-01' = {
     template: {
       containers: [
         {
-          image: '${acr.properties.loginServer}/${imageArticles}'
+          image: '${acr.outputs.acrLoginServer}/${imageArticles}'
           name: 'app-articles'
           resources: {
             cpu: json('0.25')
@@ -268,7 +265,7 @@ resource appVotes 'Microsoft.App/containerApps@2022-10-01' = {
     template: {
       containers: [
         {
-          image: '${acr.properties.loginServer}/${imageVotes}'
+          image: '${acr.outputs.acrLoginServer}/${imageVotes}'
           name: 'app-votes'
           resources: {
             cpu: json('0.25')
@@ -329,7 +326,7 @@ resource appUi 'Microsoft.App/containerApps@2022-10-01' = {
       revisionSuffix: imageUiTagNew
       containers: [
         {
-          image: '${acr.properties.loginServer}/${imageUiBase}:${imageUiTagNew}'
+          image: '${acr.outputs.acrLoginServer}/${imageUiBase}:${imageUiTagNew}'
           name: 'ui-votes'
           resources: {
             cpu: json('0.25')
