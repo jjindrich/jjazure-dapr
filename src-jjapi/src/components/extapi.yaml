@@ -1,0 +1,9 @@
+apiVersion: dapr.io/v1alpha1
+kind: HTTPEndpoint
+metadata:
+  name: "extapi"
+spec:
+  baseUrl: https://api.seeip.org
+  headers:
+  - name: "Accept-Language"
+    value: "en-US"

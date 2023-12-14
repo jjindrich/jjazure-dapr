@@ -4,8 +4,11 @@ http://localhost:5201/hello
 ### Call directly running in docker
 http://localhost:8080/hello
 
-### call with Dapr
+### call Hello with Dapr
 http://localhost:5020/v1.0/invoke/app-jjapi/method/hello
+
+### call ExtApi with Dapr
+http://localhost:5020/v1.0/invoke/app-jjapi/method/call
 
 ### call ACA
 https://jjapi.orangetree-7906d767.swedencentral.azurecontainerapps.io/hello

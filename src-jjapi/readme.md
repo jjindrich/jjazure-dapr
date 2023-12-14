@@ -17,12 +17,14 @@ Now add Dapr
 ```
 dotnet add package Dapr.Client
 
-dapr run --app-id app-jjapi --dapr-http-port 5020 --app-port 5201 dotnet run --components-path ./components
+dapr run --app-id app-jjapi --dapr-http-port 5020 --app-port 5201 --resources-path ./components dotnet run
 
 curl http://localhost:5020/v1.0/invoke/app-jjapi/method/hello
 ```
 
-TODO: Add logic into API - call external service https://docs.dapr.io/developing-applications/building-blocks/service-invocation/howto-invoke-non-dapr-endpoints/
+Now we add some Dapr logic - calling external service via Dapr service invocation
+- https://docs.dapr.io/developing-applications/building-blocks/service-invocation/howto-invoke-non-dapr-endpoints/
+
 
 ## Create Docker image and publish to Azure Container Registry
 
