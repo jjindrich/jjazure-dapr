@@ -1,5 +1,0 @@
-### Call directly
-http://localhost:5201/hello
-
-### call with Dapr
-http://localhost:5020/v1.0/invoke/app-jjapi/method/hello
